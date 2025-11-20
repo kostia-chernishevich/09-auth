@@ -1,0 +1,30 @@
+.nav {
+  padding: 8px 0;
+}
+
+.menu {
+  list-style: none; /* прибирає крапки */
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.item a {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: #4b2ca0;
+  text-decoration: none;
+}
+
+.item a:hover {
+  background: #f5f3ff;
+  text-decoration: underline;
+}
+
+.itemActive a {
+  background: #ede9fe; /* активна підсвітка */
+  font-weight: 600;
+  text-decoration: none;
+}
