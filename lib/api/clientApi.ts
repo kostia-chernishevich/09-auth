@@ -26,7 +26,7 @@ export const checkSession = async () => {
   return res.data;
 };
 
-// ---- USER UPDATE (ОЦЕ ТОБІ НЕ ВИСТАЧАЛО) ----
+
 export const updateMe = async (payload: { username?: string }) => {
   const res = await client.patch("/users/me", payload);
   return res.data;
