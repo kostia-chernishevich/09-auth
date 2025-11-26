@@ -25,21 +25,21 @@ export default function EditProfilePage() {
     router.back();
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+  setError(null);
+  setIsSubmitting(true);
 
-    try {
-      const updatedUser = await updateMe(username);
-      setUser(updatedUser);
-      router.push("/profile");
-    } catch (err) {
-      setError("Failed to update profile");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  try {
+    const updatedUser = await updateMe({ username });
+    setUser(updatedUser);
+    router.push("/profile");
+  } catch (err) {
+    setError("Failed to update profile");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <main className={css.mainContent}>

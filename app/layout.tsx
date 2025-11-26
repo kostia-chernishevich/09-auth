@@ -16,45 +16,30 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "NoteHub — create and save notes online",
   description: "Note-taking site",
-  openGraph: {
-    title: "NoteHub — create and save notes online",
-    description: "Note-taking site",
-    url: `https://07-routing-nextjs-khaki-pi.vercel.app/`,
-    siteName: "NoteHub",
-    images: [
-      {
-        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-        width: 1200,
-        height: 630,
-      },
-    ],
-    type: "website",
-  },
 };
 
 export default function RootLayout({
   children,
   modal,
-}: Readonly<{
+}: {
   children: React.ReactNode;
   modal: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-  <body className={roboto.variable}>
-    <AuthProvider>
-      <TanStackProvider>
-        <Header />
+      <body className={roboto.variable}>
+        <TanStackProvider>
+          <Header />
 
-        {children}
-        {modal}
-        <div id="modal-root" />
+          <AuthProvider>
+            {children}
+            {modal}
+            <div id="modal-root" />
+          </AuthProvider>
 
-        <Footer />
-      </TanStackProvider>
-    </AuthProvider>
-  </body>
-</html>
-
+          <Footer />
+        </TanStackProvider>
+      </body>
+    </html>
   );
 }

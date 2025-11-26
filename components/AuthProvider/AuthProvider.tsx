@@ -1,89 +1,86 @@
-"use client";
+// components/AuthProvider/AuthProvider.tsx
+'use client';
 
-import { ReactNode, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { checkSession, logout } from "@/lib/api/clientApi";
-import { useAuthStore } from "@/lib/store/authStore";
+import { ReactNode, useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { checkSession } from '@/lib/api/clientApi';
+import { useAuthStore } from '@/lib/store/authStore';
+
+const PRIVATE_PREFIXES = ['/profile', '/notes'];
+const AUTH_ROUTES = ['/sign-in', '/sign-up'];
 
 type Props = {
   children: ReactNode;
 };
 
-const AuthProvider = ({ children }: Props) => {
-  const [isChecking, setIsChecking] = useState(true);
-
+export default function AuthProvider({ children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { user, setUser, clearIsAuthenticated } = useAuthStore();
+  const { setUser, clearAuth } = useAuthStore();
 
-  // які маршрути вважаємо приватними / auth
-  const isPrivateRoute =
-    pathname.startsWith("/profile") || pathname.startsWith("/notes");
-  const isAuthRoute =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const verify = async () => {
-      setIsChecking(true);
-
       try {
-        const sessionUser = await checkSession();
+        const user = await checkSession();
 
-        if (sessionUser) {
-          // юзер є → зберігаємо у Zustand
-          setUser(sessionUser);
+        if (!isMounted) return;
 
-          // якщо вже залогінений, але відкрив /sign-in або /sign-up → ведемо в профіль
-          if (isAuthRoute) {
-            router.push("/profile");
-            return;
+        if (user) {
+          // користувач авторизований
+          setUser(user);
+
+          // якщо він випадково на /sign-in або /sign-up — перекинемо на профіль
+          if (AUTH_ROUTES.includes(pathname)) {
+            router.replace('/profile');
           }
         } else {
-          // сесії немає
-          clearIsAuthenticated();
+          // неавторизований
+          clearAuth();
 
-          // якщо це приватна сторінка → вихід і редірект на /sign-in
-          if (isPrivateRoute) {
-            await logout();
-            router.push("/sign-in");
-            return;
+          const isPrivate = PRIVATE_PREFIXES.some((prefix) =>
+            pathname.startsWith(prefix),
+          );
+
+          if (isPrivate) {
+            router.replace('/sign-in');
           }
         }
       } catch (error) {
-        // на всякий випадок: в разі помилки поводимось як при відсутності сесії
-        clearIsAuthenticated();
+        // у разі помилки вважаємо, що користувач неавторизований
+        clearAuth();
 
-        if (isPrivateRoute) {
-          router.push("/sign-in");
-          return;
+        const isPrivate = PRIVATE_PREFIXES.some((prefix) =>
+          pathname.startsWith(prefix),
+        );
+
+        if (isPrivate) {
+          router.replace('/sign-in');
         }
       } finally {
-        setIsChecking(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     verify();
-  }, [
-    pathname,
-    isAuthRoute,
-    isPrivateRoute,
-    router,
-    setUser,
-    clearIsAuthenticated,
-  ]);
 
-  // поки триває перевірка — нічого не показуємо
-  if (isChecking) {
-    return null; // тут можна буде поставити лоадер
-  }
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname, router, setUser, clearAuth]);
 
-  // додатковий захист: якщо приватна сторінка без юзера — не рендеримо контент
-  if (isPrivateRoute && !user) {
-    return null;
+  if (loading) {
+    // Поки не знаємо, є сесія чи ні — нічого не рендеримо, щоб не було “мигця”
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   return <>{children}</>;
-};
-
-export default AuthProvider;
+}

@@ -1,83 +1,41 @@
+// lib/api/serverApi.ts
 import { cookies } from "next/headers";
-import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
+import type { User } from "@/types/user";
 
-const buildCookieHeader = () => {
-  const cookieStore =  cookies();
-  const allCookies = cookieStore.getAll() as RequestCookie[];
+const baseURL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
+// збираємо всі куки в один рядок "name=value; name2=value2"
+const buildCookieHeader = async () => {
+  const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll();
+
+  if (!allCookies.length) return "";
 
   return allCookies
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 };
 
-// ==============================
-// GET SESSION
-// ==============================
-export const checkSession = async () => {
-  const cookieHeader = buildCookieHeader();
+// ---- GET ME (server) ----
+export const getMe = async (): Promise<User> => {
+  const Cookie = await buildCookieHeader();
 
-  const res = await fetch("/api/auth/session", {
+  // ВАЖЛИВО: використовуємо new URL, а не "/api/users/me"
+  const url = new URL("/api/users/me", baseURL);
+
+  const res = await fetch(url, {
     method: "GET",
-    headers: {
-      Cookie: cookieHeader,
-    },
+    headers: Cookie ? { Cookie } : {},
+    cache: "no-store",
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error("getMe failed:", res.status, text);
+    throw new Error(`Failed to fetch user. Status: ${res.status}`);
+  }
 
-  return await res.json();
-};
-
-// ==============================
-// GET ME
-// ==============================
-export const getMe = async () => {
-  const cookieHeader = buildCookieHeader();
-
-  const res = await fetch("/api/users/me", {
-    method: "GET",
-    headers: {
-      Cookie: cookieHeader,
-    },
-  });
-
-  if (!res.ok) return null;
-
-  return await res.json();
-};
-
-// ==============================
-// FETCH NOTES
-// ==============================
-export const fetchNotes = async () => {
-  const cookieHeader = buildCookieHeader();
-
-  const res = await fetch("/api/notes", {
-    method: "GET",
-    headers: {
-      Cookie: cookieHeader,
-    },
-  });
-
-  if (!res.ok) return [];
-
-  return await res.json();
-};
-
-// ==============================
-// FETCH NOTE BY ID
-// ==============================
-export const fetchNoteById = async (id: string) => {
-  const cookieHeader = buildCookieHeader();
-
-  const res = await fetch(`/api/notes/${id}`, {
-    method: "GET",
-    headers: {
-      Cookie: cookieHeader,
-    },
-  });
-
-  if (!res.ok) return null;
-
-  return await res.json();
+  const data = (await res.json()) as User;
+  return data;
 };

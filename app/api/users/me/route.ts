@@ -6,9 +6,8 @@ import { cookies } from "next/headers";
 import { logErrorResponse } from "../../_utils/utils";
 import { isAxiosError } from "axios";
 
-// хелпер для формування Cookie
-function buildCookieHeader() {
-  const store = cookies();
+async function buildCookieHeader() {
+  const store = await cookies();
   return store
     .getAll()
     .map((c) => `${c.name}=${c.value}`)
@@ -17,9 +16,9 @@ function buildCookieHeader() {
 
 export async function GET() {
   try {
-    const cookieHeader = buildCookieHeader();
+    const cookieHeader = await buildCookieHeader();
 
-    const res = await api.get("/users/me", {
+    const res = await api.get("users/me", {
       headers: {
         Cookie: cookieHeader,
       },
@@ -45,10 +44,10 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const cookieHeader = buildCookieHeader();
+    const cookieHeader = await buildCookieHeader();
     const body = await request.json();
 
-    const res = await api.patch("/users/me", body, {
+    const res = await api.patch("users/me", body, {
       headers: {
         Cookie: cookieHeader,
       },

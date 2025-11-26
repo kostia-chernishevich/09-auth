@@ -1,30 +1,29 @@
-"use client";
+// app/(private routes)/profile/page.tsx
 
-import css from "./ProfilePage.module.css";
-import Link from "next/link";
+import { getMe } from "@/lib/api/serverApi";
 import Image from "next/image";
-import { useAuthStore } from "@/lib/store/authStore";
+import css from "./ProfilePage.module.css";
 
 export const metadata = {
-  title: "User Profile",
-  description: "Page with information about the user",
+  title: "Profile Page",
+  description: "User profile",
 };
 
-export default function ProfilePage() {
-  const { user } = useAuthStore();
+export default async function ProfilePage() {
+  const user = await getMe();
 
   return (
     <main className={css.mainContent}>
       <div className={css.profileCard}>
         <div className={css.header}>
           <h1 className={css.formTitle}>Profile Page</h1>
-          <Link href="/profile/edit" className={css.editProfileButton}>
+          <a href="/profile/edit" className={css.editProfileButton}>
             Edit Profile
-          </Link>
+          </a>
         </div>
 
         <div className={css.avatarWrapper}>
-          {user?.avatar ? (
+          {user.avatar ? (
             <Image
               src={user.avatar}
               alt="User Avatar"
@@ -33,13 +32,13 @@ export default function ProfilePage() {
               className={css.avatar}
             />
           ) : (
-            <div className={css.avatarPlaceholder}>No avatar</div>
+            <p>No avatar</p>
           )}
         </div>
 
         <div className={css.profileInfo}>
-          <p>Username: {user?.username ?? "No username"}</p>
-          <p>Email: {user?.email ?? "No email"}</p>
+          <p>Username: {user.username}</p>
+          <p>Email: {user.email}</p>
         </div>
       </div>
     </main>
