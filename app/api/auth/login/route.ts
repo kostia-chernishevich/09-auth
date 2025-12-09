@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { api } from "../../api";
 import { parse } from "cookie";
-import axios from "axios";
+import { isAxiosError } from "axios";
 import { logErrorResponse } from "../../_utils/utils";
 import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 
@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
       const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
 
       for (const cookieStr of cookieArray) {
-        const parsed = parse(cookieStr);
+        // ТИПІЗАЦІЯ BEZ ANY
+        const parsed = parse(cookieStr) as Record<string, string>;
 
         const options: Partial<ResponseCookie> = {
           httpOnly: true,
@@ -30,8 +31,13 @@ export async function POST(req: NextRequest) {
           path: parsed.Path ?? "/",
         };
 
-        if (parsed.Expires) options.expires = new Date(parsed.Expires);
-        if (parsed["Max-Age"]) options.maxAge = Number(parsed["Max-Age"]);
+        if (parsed.Expires) {
+          options.expires = new Date(parsed.Expires);
+        }
+
+        if (parsed["Max-Age"]) {
+          options.maxAge = Number(parsed["Max-Age"]);
+        }
 
         if (parsed.accessToken) {
           response.cookies.set("accessToken", parsed.accessToken, options);
@@ -45,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       logErrorResponse(error.response?.data);
       return NextResponse.json(
         {

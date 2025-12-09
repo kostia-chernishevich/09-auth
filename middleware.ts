@@ -1,41 +1,39 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const accessToken = request.cookies.get("accessToken")?.value;
-  const refreshToken = request.cookies.get("refreshToken")?.value;
+export async function middleware(req: NextRequest) {
+  const accessToken = req.cookies.get("accessToken")?.value ?? null;
+  const refreshToken = req.cookies.get("refreshToken")?.value ?? null;
 
-  const { pathname } = request.nextUrl;
+  const pathname = req.nextUrl.pathname;
 
-  const isAuthPage =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
-  const isPrivatePage =
-    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
+  const isPrivatePage = pathname.startsWith("/profile");
 
-  // ---- якщо є accessToken → юзер вважається залогіненим ----
-  if (accessToken) {
-    // залогіненого не пускаємо на /sign-in /sign-up
-    if (isAuthPage) {
-      return NextResponse.redirect(new URL("/profile", request.url));
-    }
-    return NextResponse.next();
+  // Якщо є accessToken → пропускаємо
+  if (accessToken) return NextResponse.next();
+
+  // Якщо accessToken нема, але є refreshToken → пробуємо оновити
+  if (!accessToken && refreshToken) {
+    try {
+      const sessionReq = await fetch(`${req.nextUrl.origin}/api/auth/session`, {
+        method: "GET",
+        headers: { Cookie: `refreshToken=${refreshToken}` },
+      });
+
+      if (sessionReq.ok) {
+        return NextResponse.next();
+      }
+    } catch {}
   }
 
-  // ---- якщо немає accessToken, але є refreshToken → лишаємо на будь-якій сторінці ----
-  // (даємо AuthProvider на клієнті шанс оновити токен)
-  if (refreshToken) {
-    return NextResponse.next();
-  }
-
-  // ---- якщо немає жодних токенів і це приватна сторінка → шлемо на /sign-in ----
+  // Якщо користувач НЕ авторизований
   if (isPrivatePage) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // публічні сторінки без токенів пропускаємо
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/notes/:path*", "/sign-in", "/sign-up"],
+  matcher: ["/profile/:path*", "/login", "/register"],
 };

@@ -1,41 +1,24 @@
 // lib/api/serverApi.ts
-import { cookies } from "next/headers";
+import axios from "axios";
 import type { User } from "@/types/user";
 
-const baseURL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const serverClient = axios.create({
+  baseURL: process.env.API_URL,
+  withCredentials: true,
+});
 
-// збираємо всі куки в один рядок "name=value; name2=value2"
-const buildCookieHeader = async () => {
-  const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
+// Функція ходить в наш API route: /api/users/me
+export async function getMe(): Promise<User> {
+  const res = await serverClient.get("/users/me");
+  return res.data;
+}
 
-  if (!allCookies.length) return "";
-
-  return allCookies
-    .map(({ name, value }) => `${name}=${value}`)
-    .join("; ");
-};
-
-// ---- GET ME (server) ----
-export const getMe = async (): Promise<User> => {
-  const Cookie = await buildCookieHeader();
-
-  // ВАЖЛИВО: використовуємо new URL, а не "/api/users/me"
-  const url = new URL("/api/users/me", baseURL);
-
-  const res = await fetch(url, {
-    method: "GET",
-    headers: Cookie ? { Cookie } : {},
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    console.error("getMe failed:", res.status, text);
-    throw new Error(`Failed to fetch user. Status: ${res.status}`);
+// Функція для middleware
+export async function checkSession(): Promise<boolean> {
+  try {
+    const res = await serverClient.get("/auth/session");
+    return res.status === 200;
+  } catch {
+    return false;
   }
-
-  const data = (await res.json()) as User;
-  return data;
-};
+}

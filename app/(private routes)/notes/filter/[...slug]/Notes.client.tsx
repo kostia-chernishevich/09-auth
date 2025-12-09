@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api";
 import type { Note } from "@/types/note";
 import Link from "next/link";
+
+import { fetchNotes } from "@/lib/api/clientApi";
 import { SearchBox } from "../../../../../components/SearchBox/SearchBox";
 import { Pagination } from "../../../../../components/Pagination/Pagination";
-
 import { NoteList } from "../../../../../components/NoteList/NoteList";
 
 import styles from "./Notes.client.module.css";
@@ -18,23 +18,21 @@ const PER_PAGE = 12;
 const DEBOUNCE_MS = 350;
 
 export default function NotesClient({ tag }: NotesClientProps) {
-  // сторінка
   const [page, setPage] = useState(1);
 
   // пошук + debounce
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
   useEffect(() => {
     const id = setTimeout(() => {
       setDebouncedSearch(searchInput.trim());
       setPage(1);
     }, DEBOUNCE_MS);
+
     return () => clearTimeout(id);
   }, [searchInput]);
 
-  
-
-  // дані
   const queryKey = useMemo(
     () => ["notes", { tag: tag ?? "all", page, search: debouncedSearch }],
     [tag, page, debouncedSearch]
@@ -49,7 +47,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
       fetchNotes({
         tag,
         page,
-        perPage: PER_PAGE,
+        limit: PER_PAGE,
         search: debouncedSearch,
       }),
   });
@@ -67,9 +65,11 @@ export default function NotesClient({ tag }: NotesClientProps) {
             onChange={(v: string) => setSearchInput(v)}
           />
         </div>
-        <Link href="/notes/action/create"  className={styles.createBtn} >
+
+        <Link href="/notes/action/create" className={styles.createBtn}>
           + Create note
         </Link>
+
         {isFetching && <span className={styles.refreshing}>Refreshing…</span>}
       </div>
 
@@ -80,10 +80,8 @@ export default function NotesClient({ tag }: NotesClientProps) {
         onChangePage={(p: number) => setPage(p)}
       />
 
-      {/* Список (NoteList сам показує Loader/помилку/порожній стан) */}
+      {/* Список */}
       <NoteList notes={notes} isLoading={isLoading} isError={!!error} />
-
-   
     </section>
   );
 }

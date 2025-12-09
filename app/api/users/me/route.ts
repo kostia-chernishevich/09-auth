@@ -1,72 +1,23 @@
-export const dynamic = "force-dynamic";
-
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { api } from "../../api";
-import { cookies } from "next/headers";
-import { logErrorResponse } from "../../_utils/utils";
-import { isAxiosError } from "axios";
-
-async function buildCookieHeader() {
-  const store = await cookies();
-  return store
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join("; ");
-}
 
 export async function GET() {
-  try {
-    const cookieHeader = await buildCookieHeader();
+  const store = await cookies();
 
-    const res = await api.get("users/me", {
-      headers: {
-        Cookie: cookieHeader,
-      },
-    });
+  const accessToken = store.get("accessToken")?.value ?? "";
+  const refreshToken = store.get("refreshToken")?.value ?? "";
 
-    return NextResponse.json(res.data, { status: res.status });
-  } catch (error) {
-    if (isAxiosError(error)) {
-      logErrorResponse(error.response?.data);
-      return NextResponse.json(
-        { error: error.message, response: error.response?.data },
-        { status: error.response?.status ?? 500 }
-      );
-    }
+  const cookieHeader = [
+    accessToken ? `accessToken=${accessToken}` : "",
+    refreshToken ? `refreshToken=${refreshToken}` : ""
+  ]
+    .filter(Boolean)
+    .join("; ");
 
-    logErrorResponse({ message: (error as Error).message });
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
-}
+  const res = await api.get("/users/me", {
+    headers: { Cookie: cookieHeader },
+  });
 
-export async function PATCH(request: Request) {
-  try {
-    const cookieHeader = await buildCookieHeader();
-    const body = await request.json();
-
-    const res = await api.patch("users/me", body, {
-      headers: {
-        Cookie: cookieHeader,
-      },
-    });
-
-    return NextResponse.json(res.data, { status: res.status });
-  } catch (error) {
-    if (isAxiosError(error)) {
-      logErrorResponse(error.response?.data);
-      return NextResponse.json(
-        { error: error.message, response: error.response?.data },
-        { status: error.response?.status ?? 500 }
-      );
-    }
-
-    logErrorResponse({ message: (error as Error).message });
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(res.data, { status: res.status });
 }

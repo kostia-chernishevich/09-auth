@@ -2,16 +2,23 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api";
+import { fetchNoteById } from "@/lib/api/clientApi";
 import { Modal } from "../../../../components/Modal/Modal";
 
 export default function NotePreview() {
   const router = useRouter();
   const params = useParams();
 
-  const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
+  // id може бути масивом — коректна обробка
+  const id = Array.isArray(params?.id)
+    ? params.id[0]
+    : (params?.id as string);
 
-  const { data: note, isLoading, isError } = useQuery({
+  const {
+    data: note,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
     refetchOnMount: false,
@@ -38,11 +45,15 @@ export default function NotePreview() {
       <div>
         <h2>{note.title}</h2>
         <p>{note.content}</p>
+
         <div>
           <span>{note.tag}</span>
           <span> | </span>
-          <span>Created at: {new Date(note.createdAt).toLocaleString()}</span>
+          <span>
+            Created at: {new Date(note.createdAt).toLocaleString()}
+          </span>
         </div>
+
         <button onClick={() => router.back()}>Close</button>
       </div>
     </Modal>
