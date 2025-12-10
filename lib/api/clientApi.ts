@@ -101,6 +101,7 @@ export const createNote = async (payload: {
   return res.data;
 };
 
-export const deleteNote = async (id: string): Promise<void> => {
-  await client.delete(`/notes/${id}`);
+export const deleteNote = async (id: string): Promise<Note> => {
+  const res = await client.delete<Note>(`/notes/${id}`);
+  return res.data;
 };

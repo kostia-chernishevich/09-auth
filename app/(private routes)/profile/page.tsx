@@ -5,6 +5,7 @@ import { getMe } from "@/lib/api/serverApi";
 
 export const metadata: Metadata = {
   title: "Profile",
+  description: "User profile page", // ⬅ додано description
 };
 
 export default async function ProfilePage() {

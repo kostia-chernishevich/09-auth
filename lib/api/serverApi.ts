@@ -1,24 +1,47 @@
 // lib/api/serverApi.ts
-import axios from "axios";
+import { cookies } from "next/headers";
+import { api } from "./api"; // ← Правильний імпорт!
 import type { User } from "@/types/user";
+import type { Note } from "@/types/note";
+import type { AxiosResponse } from "axios";
 
-const serverClient = axios.create({
-  baseURL: process.env.API_URL,
-  withCredentials: true,
-});
+function formatCookieHeader(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  return cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+}
 
-// Функція ходить в наш API route: /api/users/me
+// ---------- USER ----------
 export async function getMe(): Promise<User> {
-  const res = await serverClient.get("/users/me");
+  const cookieStore = await cookies();
+  const cookieHeader = formatCookieHeader(cookieStore);
+
+  const res = await api.get<User>("/users/me", {
+    headers: { Cookie: cookieHeader },
+  });
+
   return res.data;
 }
 
-// Функція для middleware
-export async function checkSession(): Promise<boolean> {
-  try {
-    const res = await serverClient.get("/auth/session");
-    return res.status === 200;
-  } catch {
-    return false;
-  }
+// використовується в middleware → має повертати AxiosResponse!
+export async function checkSession(): Promise<AxiosResponse<User | null>> {
+  const cookieStore = await cookies();
+  const cookieHeader = formatCookieHeader(cookieStore);
+
+  return api.get<User | null>("/auth/session", {
+    headers: { Cookie: cookieHeader },
+  });
+}
+
+// ---------- NOTES ----------
+export async function getNoteById(id: string): Promise<Note> {
+  const cookieStore = await cookies();
+  const cookieHeader = formatCookieHeader(cookieStore);
+
+  const res = await api.get<Note>(`/notes/${id}`, {
+    headers: { Cookie: cookieHeader },
+  });
+
+  return res.data;
 }

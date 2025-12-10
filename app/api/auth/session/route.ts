@@ -1,35 +1,73 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { api } from "../../api";
+import { parse } from "cookie";
+import { isAxiosError } from "axios";
+import { logErrorResponse } from "../../_utils/utils";
 
 export async function GET() {
-  const store = await cookies();
+  try {
+    const store = cookies(); 
 
-  const accessToken = store.get("accessToken")?.value ?? "";
-  const refreshToken = store.get("refreshToken")?.value ?? "";
+    const accessToken = store.get("accessToken")?.value ?? null;
+    const refreshToken = store.get("refreshToken")?.value ?? null;
 
-  const cookieHeader = [
-    accessToken ? `accessToken=${accessToken}` : "",
-    refreshToken ? `refreshToken=${refreshToken}` : ""
-  ]
-    .filter(Boolean)
-    .join("; ");
+    if (!accessToken && !refreshToken) {
+      return NextResponse.json(null, { status: 200 });
+    }
 
-  const res = await api.get("/auth/session", {
-    headers: { Cookie: cookieHeader },
-  });
+    // (2) Якщо є accessToken
+    if (accessToken) {
+      try {
+        const res = await api.get("auth/session", {
+          headers: { Cookie: `accessToken=${accessToken}` },
+        });
+        return NextResponse.json(res.data, { status: 200 });
+      } catch {}
+    }
 
-  const response = NextResponse.json(res.data, { status: res.status });
+    // (3) Якщо accessToken не спрацював → refresh
+    if (refreshToken) {
+      try {
+        const res = await api.get("auth/session", {
+          headers: { Cookie: `refreshToken=${refreshToken}` },
+        });
 
-  const setCookie = res.headers["set-cookie"];
-  if (setCookie) {
-    setCookie.forEach((cookieStr: string) => {
-      const [pair] = cookieStr.split(";");
-      const [name, value] = pair.split("=");
+        const response = NextResponse.json(res.data, { status: 200 });
 
-      response.cookies.set(name.trim(), value.trim());
-    });
+        const setCookie = res.headers["set-cookie"];
+        if (setCookie) {
+          for (const cookieStr of setCookie) {
+            const parsed = parse(cookieStr);
+
+            const options = {
+              httpOnly: true,
+              secure: true,
+              sameSite: "lax" as const,
+              path: parsed.Path ?? "/",
+              expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+              maxAge: parsed["Max-Age"] ? Number(parsed["Max-Age"]) : undefined
+            };
+
+            if (parsed.accessToken) {
+              response.cookies.set("accessToken", parsed.accessToken, options);
+            }
+            if (parsed.refreshToken) {
+              response.cookies.set("refreshToken", parsed.refreshToken, options);
+            }
+          }
+        }
+
+        return response;
+      } catch {}
+    }
+
+    return NextResponse.json(null, { status: 200 });
+
+  } catch (err) {
+    if (isAxiosError(err)) {
+      logErrorResponse(err.response?.data);
+    }
+    return NextResponse.json(null, { status: 200 });
   }
-
-  return response;
 }
