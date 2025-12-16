@@ -2,11 +2,17 @@
 import css from "./NoteForm.module.css";
 import { useId } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNote, type CreateNotePayload } from "../../lib/api";
+import { createNote } from "../../lib/api/clientApi";
+
 import type { NoteTag } from "../../types/note";
 import { toast } from "react-hot-toast";
 import { useNoteDraftStore } from "@/lib/store/noteStore";
 import { useRouter } from "next/navigation";
+type CreateNotePayload = {
+  title: string;
+  content: string;
+  tag: NoteTag;
+};
 
 export function NoteForm() {
   const fieldId = useId();
@@ -15,7 +21,9 @@ export function NoteForm() {
   const { draft, setDraft, clearDraft } = useNoteDraftStore();
 
   const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     setDraft({
       ...draft,
@@ -37,7 +45,13 @@ export function NoteForm() {
   });
 
   async function handleSubmit(formData: FormData) {
-    const allowedTags = ["Todo", "Work", "Personal", "Meeting", "Shopping"] as const;
+    const allowedTags = [
+      "Todo",
+      "Work",
+      "Personal",
+      "Meeting",
+      "Shopping",
+    ] as const;
     const rawTag = formData.get("tag");
     const tag = allowedTags.includes(rawTag as NoteTag)
       ? (rawTag as NoteTag)
