@@ -45,7 +45,7 @@ export default async function NotesPage({
 
   await qc.prefetchQuery({
     queryKey: ["notes", { tag: rawTag }],
-    queryFn: () => fetchNotes({ tag, page: 1, perPage: 12, search: "" }),
+    queryFn: () => fetchNotes({ tag, page: 1, limit: 12, search: "" }),
   });
 
   const state = dehydrate(qc);

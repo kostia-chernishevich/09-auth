@@ -4,32 +4,35 @@ import css from "./SignInPage.module.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/lib/api/clientApi";
-import { useAuthStore } from "@/lib/store/authStore";
+
 
 export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { setUser } = useAuthStore();
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
 
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get("email");
-    const password = formData.get("password");
+ const handleSubmit = async (
+  event: React.FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
+  setError(null);
 
-    try {
-      const user = await login(String(email), String(password));
+  const formData = new FormData(event.currentTarget);
+  const email = formData.get("email");
+  const password = formData.get("password");
 
-      // якщо бек повертає user:
-      setUser(user);
+  try {
+    await login({
+      email: String(email),
+      password: String(password),
+    });
 
-      router.push("/profile");
-    } catch (error) {
-      setError("Invalid email or password");
-    }
-  };
+    router.push("/profile");
+  } catch {
+    setError("Invalid email or password");
+  }
+};
+
 
   return (
     <main className={css.mainContent}>
