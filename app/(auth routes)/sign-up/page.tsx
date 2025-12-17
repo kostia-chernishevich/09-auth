@@ -1,7 +1,7 @@
 "use client";
 
 import css from "./SignUpPage.module.css";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { register } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -9,11 +9,9 @@ import { useAuthStore } from "@/lib/store/authStore";
 export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const setUser = useAuthStore((state) => state.setUser);
+  const setUser = useAuthStore(state => state.setUser);
 
-  const handleSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
