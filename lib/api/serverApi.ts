@@ -1,6 +1,6 @@
-// lib/api/serverApi.ts
+
 import { cookies } from "next/headers";
-import { api } from "./api"; // ← Правильний імпорт!
+import { api } from "./api";
 import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
 import type { AxiosResponse } from "axios";
@@ -12,7 +12,7 @@ function formatCookieHeader(cookieStore: Awaited<ReturnType<typeof cookies>>) {
     .join("; ");
 }
 
-// ---------- USER ----------
+
 export async function getMe(): Promise<User> {
   const cookieStore = await cookies();
   const cookieHeader = formatCookieHeader(cookieStore);
@@ -24,7 +24,7 @@ export async function getMe(): Promise<User> {
   return res.data;
 }
 
-// використовується в middleware → має повертати AxiosResponse!
+
 export async function checkSession(): Promise<AxiosResponse<User | null>> {
   const cookieStore = await cookies();
   const cookieHeader = formatCookieHeader(cookieStore);
@@ -34,13 +34,35 @@ export async function checkSession(): Promise<AxiosResponse<User | null>> {
   });
 }
 
-// ---------- NOTES ----------
-export async function getNoteById(id: string): Promise<Note> {
+
+export async function fetchNoteById(id: string): Promise<Note> {
   const cookieStore = await cookies();
   const cookieHeader = formatCookieHeader(cookieStore);
 
   const res = await api.get<Note>(`/notes/${id}`, {
     headers: { Cookie: cookieHeader },
+  });
+
+  return res.data;
+}
+type FetchNotesParams = {
+  tag?: string;
+  page: number;
+  limit: number;
+  search: string;
+};
+
+export async function fetchNotes(
+  params: FetchNotesParams
+): Promise<Note[]> {
+  const cookieStore = await cookies();
+  const cookieHeader = formatCookieHeader(cookieStore);
+
+  const res = await api.get<Note[]>("/notes", {
+    params,
+    headers: {
+      Cookie: cookieHeader,
+    },
   });
 
   return res.data;
